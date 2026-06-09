@@ -1,0 +1,6 @@
+{
+  "api_url": "https://api.github.com",
+  "token": "ghp_your_personal_access_token",
+  "repo": "owner/name",
+  "insecure": false
+}

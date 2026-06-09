@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a new command, flag, or behavior
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do that github-docs-cli doesn't support today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the command, flag, or behavior you'd like. Include example invocations if possible.
+      placeholder: |
+        github-docs-cli docs export --path docs --out ./site
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

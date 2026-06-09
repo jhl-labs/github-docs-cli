@@ -1,0 +1,42 @@
+name: Commercial / usage permission request
+description: Request written permission for commercial use, as required by the JHL License
+labels: ["license", "permission-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        github-docs-cli is licensed under the **JHL License**. Commercial use of both the
+        binary and the source code requires prior written permission from the Licensor.
+        Use this form to request that permission, or to send the notification required by
+        Section 5 of the license (modification / distribution).
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Request type
+      options:
+        - Commercial use permission (Section 3.2)
+        - Modification / distribution notification (Section 5)
+        - Other licensing question
+    validations:
+      required: true
+  - type: input
+    id: who
+    attributes:
+      label: Individual or organization
+      description: Who will be using the software?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Intended use and scope
+      description: Describe how, where, and to what extent you intend to use or distribute the software.
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: Contact information
+      description: How should the Licensor reach you?
+    validations:
+      required: true

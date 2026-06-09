@@ -1,0 +1,14 @@
+# Build artifacts
+/github-docs-cli
+/github-docs-cli.exe
+/dist/
+*.exe
+
+# Local secrets / config
+.env
+*.local.json
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/

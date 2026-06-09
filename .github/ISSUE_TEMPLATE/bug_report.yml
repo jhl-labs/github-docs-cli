@@ -1,0 +1,52 @@
+name: Bug report
+description: Report a problem with github-docs-cli
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to report a bug. Please do not include tokens or internal URLs.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `github-docs-cli version`
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS / arch
+      options:
+        - linux/amd64
+        - linux/arm64
+        - darwin/amd64
+        - darwin/arm64
+        - windows/amd64
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, and what happened instead?
+      placeholder: |
+        Command: github-docs-cli issue get --number 123 --output text
+        Expected: issue summary
+        Actual: error ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output / error
+      description: Relevant output. Redact secrets and internal hostnames.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have removed any tokens and internal URLs from this report.
+          required: true
