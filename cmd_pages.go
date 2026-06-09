@@ -50,7 +50,11 @@ func pagesGet(args []string) error {
 		fmt.Printf("status:  %s\n", info.Status)
 		fmt.Printf("url:     %s\n", info.HTMLURL)
 		if info.Source != nil {
-			fmt.Printf("source:  %s /%s\n", info.Source.Branch, info.Source.Path)
+			path := info.Source.Path
+			if path == "" {
+				path = "/"
+			}
+			fmt.Printf("source:  %s %s\n", info.Source.Branch, path)
 		}
 	})
 }
