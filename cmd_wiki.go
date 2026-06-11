@@ -39,6 +39,13 @@ type wikiContext struct {
 	clean func()
 }
 
+// wikiRemoteURL builds the git URL of the wiki repository. It is a package
+// variable so tests can point it at a local repository.
+var wikiRemoteURL = func(common *commonFlags, owner, repo string) string {
+	host := gitHost(common.apiURL)
+	return fmt.Sprintf("https://x-access-token:%s@%s/%s/%s.wiki.git", common.token, host, owner, repo)
+}
+
 // cloneWiki shallow-clones the wiki repo into a temp dir.
 func cloneWiki(common *commonFlags) (*wikiContext, error) {
 	if _, err := exec.LookPath("git"); err != nil {
@@ -51,8 +58,7 @@ func cloneWiki(common *commonFlags) (*wikiContext, error) {
 	if common.token == "" {
 		return nil, fmt.Errorf("a token is required to access the wiki (--token / %s)", config.EnvToken)
 	}
-	host := gitHost(common.apiURL)
-	cloneURL := fmt.Sprintf("https://x-access-token:%s@%s/%s/%s.wiki.git", common.token, host, owner, repo)
+	cloneURL := wikiRemoteURL(common, owner, repo)
 
 	dir, err := os.MkdirTemp("", "ghdocs-wiki-")
 	if err != nil {

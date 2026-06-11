@@ -253,7 +253,7 @@ func (c *Client) shouldRetry(resp *http.Response, attempt int) bool {
 		return true
 	}
 	// GitHub secondary rate limits answer 403 with a Retry-After hint.
-	if resp.StatusCode == http.StatusForbidden && retryAfter(resp.Header) > 0 {
+	if resp.StatusCode == http.StatusForbidden && resp.Header.Get("Retry-After") != "" {
 		return true
 	}
 	return false

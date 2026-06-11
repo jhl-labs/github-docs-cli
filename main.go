@@ -14,30 +14,36 @@ import (
 var version = "0.1.0-dev"
 
 func main() {
-	if len(os.Args) < 2 {
+	os.Exit(run(os.Args[1:]))
+}
+
+// run dispatches a single command and returns the process exit code. It is
+// separated from main so it can be unit-tested without os.Exit.
+func run(args []string) int {
+	if len(args) < 1 {
 		usage(os.Stderr)
-		os.Exit(2)
+		return 2
 	}
 
-	cmd, args := os.Args[1], os.Args[2:]
+	cmd, rest := args[0], args[1:]
 	var err error
 	switch cmd {
 	case "issue":
-		err = runIssue(args)
+		err = runIssue(rest)
 	case "discussion":
-		err = runDiscussion(args)
+		err = runDiscussion(rest)
 	case "wiki":
-		err = runWiki(args)
+		err = runWiki(rest)
 	case "docs":
-		err = runDocs(args)
+		err = runDocs(rest)
 	case "pages":
-		err = runPages(args)
+		err = runPages(rest)
 	case "note":
-		err = runNote(args)
+		err = runNote(rest)
 	case "generate-skill":
-		err = runGenerateSkill(args)
+		err = runGenerateSkill(rest)
 	case "generate-workflow":
-		err = runGenerateWorkflow(args)
+		err = runGenerateWorkflow(rest)
 	case "version", "-v", "--version":
 		fmt.Printf("github-docs-cli %s\n", version)
 	case "help", "-h", "--help":
@@ -45,13 +51,14 @@ func main() {
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", cmd)
 		usage(os.Stderr)
-		os.Exit(2)
+		return 2
 	}
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
 
 func usage(w *os.File) {
