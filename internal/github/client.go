@@ -7,7 +7,6 @@ package github
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -67,9 +66,6 @@ func New(cfg config.Config, timeout time.Duration) (*Client, error) {
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	if cfg.Insecure {
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	}
 
 	return &Client{
 		restURL:    cfg.APIURL,
