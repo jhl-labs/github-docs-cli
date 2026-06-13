@@ -1,0 +1,6 @@
+version: 1
+
+suppress:
+  - metric: DUP-01
+    path: cmd_issue.go
+    reason: Command handlers intentionally share flag/client/output scaffolding; keep block findings visible while demoting the project-level duplicate-ratio summary.

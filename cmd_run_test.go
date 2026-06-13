@@ -17,49 +17,89 @@ import (
 func mockGitHub(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		p := r.URL.Path
-		switch {
-		case strings.HasSuffix(p, "/graphql"):
-			handleGraphQL(w, r)
-		case strings.Contains(p, "/issues/") && strings.HasSuffix(p, "/comments") && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode([]map[string]any{{"id": 1, "body": "c", "user": map[string]any{"login": "u"}}})
-		case strings.Contains(p, "/issues/") && strings.HasSuffix(p, "/comments") && r.Method == http.MethodPost:
-			json.NewEncoder(w).Encode(map[string]any{"id": 5, "body": "x", "html_url": "http://x/c"})
-		case strings.Contains(p, "/issues/") && strings.Contains(p, "/labels"):
-			json.NewEncoder(w).Encode([]map[string]any{{"name": "docs"}})
-		case strings.HasSuffix(p, "/issues") && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode([]map[string]any{
-				{"number": 1, "title": "Doc", "state": "open", "labels": []map[string]any{{"name": "docs"}}},
-				{"number": 2, "title": "PR", "state": "open", "pull_request": map[string]any{"url": "x"}},
-			})
-		case strings.HasSuffix(p, "/issues") && r.Method == http.MethodPost:
-			json.NewEncoder(w).Encode(map[string]any{"number": 7, "title": "T", "state": "open", "html_url": "http://x/7"})
-		case strings.Contains(p, "/issues/") && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode(map[string]any{"number": 7, "title": "T", "state": "open", "html_url": "http://x/7", "labels": []map[string]any{{"name": "docs"}}, "user": map[string]any{"login": "u"}, "body": "B"})
-		case strings.Contains(p, "/issues/") && r.Method == http.MethodPatch:
-			json.NewEncoder(w).Encode(map[string]any{"number": 7, "state": "closed", "html_url": "http://x/7"})
-		case strings.Contains(p, "/contents/"):
-			handleContents(w, r)
-		case strings.Contains(p, "/git/trees/"):
-			json.NewEncoder(w).Encode(map[string]any{"sha": "root", "truncated": false, "tree": []map[string]any{
-				{"path": "docs/a.md", "type": "blob"}, {"path": "docs/sub", "type": "tree"}, {"path": "README.md", "type": "blob"},
-			}})
-		case strings.HasSuffix(p, "/pages") && r.Method == http.MethodGet:
-			json.NewEncoder(w).Encode(map[string]any{"status": "built", "html_url": "http://pages", "source": map[string]any{"branch": "main", "path": "/docs"}})
-		case strings.HasSuffix(p, "/pages") && r.Method == http.MethodPost:
-			json.NewEncoder(w).Encode(map[string]any{"status": "queued", "html_url": "http://pages"})
-		case strings.HasSuffix(p, "/pages") && r.Method == http.MethodPut:
-			w.WriteHeader(http.StatusNoContent)
-		case strings.HasSuffix(p, "/pages/builds") && r.Method == http.MethodPost:
-			w.WriteHeader(http.StatusCreated)
-		case strings.HasSuffix(p, "/repos/o/r") || strings.HasSuffix(p, "/repos/o/r/"):
-			json.NewEncoder(w).Encode(map[string]any{"default_branch": "main"})
-		default:
-			t.Logf("unhandled %s %s", r.Method, p)
+		if !handleMockGitHubRoute(w, r) {
+			t.Logf("unhandled %s %s", r.Method, r.URL.Path)
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(`{"message":"Not Found"}`))
 		}
 	}))
+}
+
+type mockRoute struct {
+	match  func(*http.Request) bool
+	handle func(http.ResponseWriter, *http.Request)
+}
+
+func handleMockGitHubRoute(w http.ResponseWriter, r *http.Request) bool {
+	for _, route := range mockRoutes() {
+		if route.match(r) {
+			route.handle(w, r)
+			return true
+		}
+	}
+	return false
+}
+
+func mockRoutes() []mockRoute {
+	return []mockRoute{
+		{hasSuffix("/graphql"), handleGraphQL},
+		{methodAnd(contains("/issues/"), hasSuffix("/comments"), isMethod(http.MethodGet)), writeJSON([]map[string]any{{"id": 1, "body": "c", "user": map[string]any{"login": "u"}}})},
+		{methodAnd(contains("/issues/"), hasSuffix("/comments"), isMethod(http.MethodPost)), writeJSON(map[string]any{"id": 5, "body": "x", "html_url": "http://x/c"})},
+		{methodAnd(contains("/issues/"), contains("/labels")), writeJSON([]map[string]any{{"name": "docs"}})},
+		{methodAnd(hasSuffix("/issues"), isMethod(http.MethodGet)), writeJSON([]map[string]any{
+			{"number": 1, "title": "Doc", "state": "open", "labels": []map[string]any{{"name": "docs"}}},
+			{"number": 2, "title": "PR", "state": "open", "pull_request": map[string]any{"url": "x"}},
+		})},
+		{methodAnd(hasSuffix("/issues"), isMethod(http.MethodPost)), writeJSON(map[string]any{"number": 7, "title": "T", "state": "open", "html_url": "http://x/7"})},
+		{methodAnd(contains("/issues/"), isMethod(http.MethodGet)), writeJSON(map[string]any{"number": 7, "title": "T", "state": "open", "html_url": "http://x/7", "labels": []map[string]any{{"name": "docs"}}, "user": map[string]any{"login": "u"}, "body": "B"})},
+		{methodAnd(contains("/issues/"), isMethod(http.MethodPatch)), writeJSON(map[string]any{"number": 7, "state": "closed", "html_url": "http://x/7"})},
+		{contains("/contents/"), handleContents},
+		{contains("/git/trees/"), writeJSON(map[string]any{"sha": "root", "truncated": false, "tree": []map[string]any{
+			{"path": "docs/a.md", "type": "blob"}, {"path": "docs/sub", "type": "tree"}, {"path": "README.md", "type": "blob"},
+		}})},
+		{methodAnd(hasSuffix("/pages"), isMethod(http.MethodGet)), writeJSON(map[string]any{"status": "built", "html_url": "http://pages", "source": map[string]any{"branch": "main", "path": "/docs"}})},
+		{methodAnd(hasSuffix("/pages"), isMethod(http.MethodPost)), writeJSON(map[string]any{"status": "queued", "html_url": "http://pages"})},
+		{methodAnd(hasSuffix("/pages"), isMethod(http.MethodPut)), statusOnly(http.StatusNoContent)},
+		{methodAnd(hasSuffix("/pages/builds"), isMethod(http.MethodPost)), statusOnly(http.StatusCreated)},
+		{func(r *http.Request) bool {
+			return strings.HasSuffix(r.URL.Path, "/repos/o/r") || strings.HasSuffix(r.URL.Path, "/repos/o/r/")
+		}, writeJSON(map[string]any{"default_branch": "main"})},
+	}
+}
+
+func contains(part string) func(*http.Request) bool {
+	return func(r *http.Request) bool { return strings.Contains(r.URL.Path, part) }
+}
+
+func hasSuffix(suffix string) func(*http.Request) bool {
+	return func(r *http.Request) bool { return strings.HasSuffix(r.URL.Path, suffix) }
+}
+
+func isMethod(method string) func(*http.Request) bool {
+	return func(r *http.Request) bool { return r.Method == method }
+}
+
+func methodAnd(matchers ...func(*http.Request) bool) func(*http.Request) bool {
+	return func(r *http.Request) bool {
+		for _, match := range matchers {
+			if !match(r) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func writeJSON(v any) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		json.NewEncoder(w).Encode(v)
+	}
+}
+
+func statusOnly(status int) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(status)
+	}
 }
 
 func handleContents(w http.ResponseWriter, r *http.Request) {
